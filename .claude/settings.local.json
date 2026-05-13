@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:/Users/KinJohn/Documents/GitHub/YOur-fRiend-iS-hoPeLeSS/images/cards\")",
+      "Bash(cp \"D:/课程/智能视觉工程设计/图片/1x/\"*.png \"C:/Users/KinJohn/Documents/GitHub/YOur-fRiend-iS-hoPeLeSS/images/cards/\")",
+      "Bash(npx serve *)",
+      "Bash(python -m http.server 3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(where python *)",
+      "Bash(npm *)",
+      "Bash(powershell *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/)"
+    ]
+  }
+}

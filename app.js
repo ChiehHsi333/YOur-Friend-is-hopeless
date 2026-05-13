@@ -11,8 +11,6 @@ const ATTRS = [
 
 const AUTO_ADVANCE_DELAY = 1100;
 const FADE_DURATION = 280;
-const CARD_STORAGE_KEY = "failure-card-collection";
-const CARD_SELECTION_KEY = "failure-card-selection";
 
 const state = {
   questions: [],
@@ -20,8 +18,10 @@ const state = {
   comments: [],
   cards: [],
   collectedCards: new Set(),
-  selectedCards: new Set(),
+  drawnCards: [],
+  revealedSlots: [false, false, false],
   cardEcho: null,
+  currentViewingCard: null,
   currentIndex: 0,
   answerMap: {},
   scores: null,
@@ -29,7 +29,8 @@ const state = {
   comment: null,
   maxScores: null,
   autoAdvance: null,
-  previousScreen: "intro"
+  previousScreen: "intro",
+  hasDrawn: false
 };
 
 const ui = {
@@ -67,9 +68,13 @@ const ui = {
   cardGrid: document.getElementById("cardGrid"),
   cardCount: document.getElementById("cardCount"),
   cardTotal: document.getElementById("cardTotal"),
-  selectedCount: document.getElementById("selectedCount"),
-  selectedList: document.getElementById("selectedList"),
-  clearSelectionBtn: document.getElementById("clearSelectionBtn")
+  cardModal: document.getElementById("cardModal"),
+  cardModalImage: document.getElementById("cardModalImage"),
+  cardModalTitle: document.getElementById("cardModalTitle"),
+  cardModalClose: document.getElementById("cardModalClose"),
+  cardModalCancel: document.getElementById("cardModalCancel"),
+  drawCardsGrid: document.getElementById("drawCardsGrid"),
+  redrawCardsBtn: document.getElementById("redrawCardsBtn")
 };
 
 init();
@@ -90,18 +95,11 @@ async function init() {
   state.outcomes = outcomes;
   state.comments = comments;
   state.cards = buildCardsFromQuestions(questions);
-  state.collectedCards = loadCollectedCards();
-  state.selectedCards = loadSelectedCards();
-  normalizeCardSets();
   state.maxScores = computeMaxScores(questions);
   ui.progressTotal.textContent = questions.length;
   if (ui.progressBar) {
     ui.progressBar.setAttribute("aria-valuemax", String(questions.length));
   }
-  if (ui.cardTotal) {
-    ui.cardTotal.textContent = String(state.cards.length);
-  }
-  renderCardWall();
 
   bindEvents();
   showScreen("intro");
@@ -118,7 +116,12 @@ function bindEvents() {
   ui.openCardsResultBtn?.addEventListener("click", () => openCardWall("result"));
   ui.cardsBackIntroBtn?.addEventListener("click", () => showScreen("intro"));
   ui.cardsBackResultBtn?.addEventListener("click", () => showScreen("result"));
-  ui.clearSelectionBtn?.addEventListener("click", clearSelectedCards);
+  ui.cardModalClose?.addEventListener("click", closeCardModal);
+  ui.cardModalCancel?.addEventListener("click", closeCardModal);
+  ui.cardModal?.addEventListener("click", (e) => {
+    if (e.target === ui.cardModal) closeCardModal();
+  });
+  ui.redrawCardsBtn?.addEventListener("click", redrawCards);
 }
 
 async function loadJson(path) {
@@ -153,6 +156,10 @@ function startQuiz() {
   state.scores = null;
   state.result = null;
   state.comment = null;
+  state.collectedCards = new Set();
+  state.drawnCards = [];
+  state.revealedSlots = [false, false, false];
+  state.hasDrawn = false;
   renderQuestion();
   showScreen("quiz");
 }
@@ -255,10 +262,11 @@ function showResult() {
   ui.resultDescription.textContent = outcome.description;
   ui.resultComment.textContent = comment.text;
   showScreen("result");
-  updateCardEcho();
   renderScoreList(state.scores);
   renderRadarChart(state.scores);
   ui.shareText.value = buildShareText(outcome, comment, state.scores);
+
+  initDrawCardsSection();
 }
 
 function computeScores() {
@@ -400,7 +408,8 @@ function buildCardsFromQuestions(questions) {
         id: getCardId(question.id, option.id),
         questionId: question.id,
         optionId: option.id,
-        title: option.note || option.text
+        title: option.note || option.text,
+        image: `./images/cards/t${question.id}${option.id.toLowerCase()}.png`
       });
     });
   });
@@ -411,130 +420,100 @@ function getCardId(questionId, optionId) {
   return `T${questionId}-${optionId}`;
 }
 
-function loadCollectedCards() {
-  if (typeof localStorage === "undefined") {
-    return new Set();
-  }
-  try {
-    const raw = localStorage.getItem(CARD_STORAGE_KEY);
-    if (!raw) {
-      return new Set();
-    }
-    const list = JSON.parse(raw);
-    if (Array.isArray(list)) {
-      return new Set(list);
-    }
-  } catch (error) {
-    return new Set();
-  }
-  return new Set();
-}
-
-function loadSelectedCards() {
-  if (typeof localStorage === "undefined") {
-    return new Set();
-  }
-  try {
-    const raw = localStorage.getItem(CARD_SELECTION_KEY);
-    if (!raw) {
-      return new Set();
-    }
-    const list = JSON.parse(raw);
-    if (Array.isArray(list)) {
-      return new Set(list);
-    }
-  } catch (error) {
-    return new Set();
-  }
-  return new Set();
-}
-
-function normalizeCardSets() {
-  const validIds = new Set(state.cards.map((card) => card.id));
-  let changed = false;
-
-  state.collectedCards.forEach((cardId) => {
-    if (!validIds.has(cardId)) {
-      state.collectedCards.delete(cardId);
-      changed = true;
-    }
-  });
-
-  state.selectedCards.forEach((cardId) => {
-    if (!validIds.has(cardId) || !state.collectedCards.has(cardId)) {
-      state.selectedCards.delete(cardId);
-      changed = true;
-    }
-  });
-
-  if (changed) {
-    saveCollectedCards();
-    saveSelectedCards();
-  }
-}
-
-function saveCollectedCards() {
-  if (typeof localStorage === "undefined") {
-    return;
-  }
-  const list = Array.from(state.collectedCards);
-  localStorage.setItem(CARD_STORAGE_KEY, JSON.stringify(list));
-}
-
-function saveSelectedCards() {
-  if (typeof localStorage === "undefined") {
-    return;
-  }
-  const list = Array.from(state.selectedCards);
-  localStorage.setItem(CARD_SELECTION_KEY, JSON.stringify(list));
-}
-
 function unlockCard(questionId, optionId) {
   const cardId = getCardId(questionId, optionId);
-  if (state.collectedCards.has(cardId)) {
-    return;
-  }
   state.collectedCards.add(cardId);
-  saveCollectedCards();
-  renderCardWall();
+}
+
+function initDrawCardsSection() {
+  state.hasDrawn = false;
+  state.drawnCards = [];
+  state.revealedSlots = [false, false, false];
+
+  // 随机选择3张卡牌
+  const collectedArray = Array.from(state.collectedCards);
+  const shuffled = collectedArray.sort(() => Math.random() - 0.5);
+  const drawnIds = shuffled.slice(0, 3);
+  state.drawnCards = drawnIds.map((id) => getCardById(id)).filter(Boolean);
+
+  // 重置UI
+  const slots = ui.drawCardsGrid?.querySelectorAll(".draw-card-slot");
+  slots?.forEach((slot, index) => {
+    slot.classList.remove("revealed");
+    slot.innerHTML = '<span class="draw-card-question">?</span>';
+  });
+
+  // 绑定点击事件
+  slots?.forEach((slot, index) => {
+    slot.onclick = () => revealCardSlot(index);
+  });
+}
+
+function revealCardSlot(index) {
+  const card = state.drawnCards[index];
+  if (!card) return;
+
+  // 如果还没翻开，先翻开
+  if (!state.revealedSlots[index]) {
+    state.revealedSlots[index] = true;
+
+    const slots = ui.drawCardsGrid?.querySelectorAll(".draw-card-slot");
+    const slot = slots?.[index];
+    if (slot) {
+      slot.classList.add("revealed");
+      slot.innerHTML = `<img src="${card.image}" alt="${card.title}">`;
+    }
+
+    // 检查是否全部翻开
+    if (state.revealedSlots.every((r) => r)) {
+      state.hasDrawn = true;
+      updateCardEcho();
+    }
+  }
+
+  // 显示弹窗
+  openCardModal(card);
+}
+
+function redrawCards() {
+  initDrawCardsSection();
+}
+
+function getCardById(cardId) {
+  return state.cards.find((card) => card.id === cardId);
 }
 
 function renderCardWall() {
-  if (!ui.cardGrid) {
-    return;
-  }
+  if (!ui.cardGrid) return;
+
   ui.cardGrid.innerHTML = "";
+
+  const drawnIds = new Set(state.drawnCards.map((c) => c.id));
+
   state.cards.forEach((card) => {
     const item = document.createElement("div");
-    const collected = state.collectedCards.has(card.id);
-    const selected = state.selectedCards.has(card.id);
-    item.className = `card-item${collected ? "" : " locked"}${selected ? " selected" : ""}`;
-    item.textContent = collected ? card.title : "未获得";
-    if (collected) {
-      item.addEventListener("click", () => toggleCardSelection(card.id));
+    const isDrawn = drawnIds.has(card.id);
+    item.className = `card-item${isDrawn ? "" : " locked"}`;
+
+    if (isDrawn) {
+      item.innerHTML = `
+        <img src="${card.image}" alt="${card.title}" class="card-image">
+        <div class="card-title">${card.title}</div>
+      `;
+      item.addEventListener("click", () => openCardModal(card));
+    } else {
+      item.innerHTML = `<span class="card-locked-text">?</span>`;
     }
+
     ui.cardGrid.appendChild(item);
   });
-  updateCardMeta();
-}
 
-function updateCardMeta() {
   if (ui.cardCount) {
-    ui.cardCount.textContent = String(state.collectedCards.size);
+    ui.cardCount.textContent = String(state.drawnCards.length);
   }
   if (ui.cardTotal) {
     ui.cardTotal.textContent = String(state.cards.length);
   }
-  updateSelectedList();
-  updateCardNav();
-}
-
-function updateCardNav() {
-  if (!ui.cardsBackResultBtn) {
-    return;
-  }
-  const showResultBack = Boolean(state.result);
-  ui.cardsBackResultBtn.classList.toggle("is-hidden", !showResultBack);
 }
 
 function openCardWall(from) {
@@ -543,81 +522,32 @@ function openCardWall(from) {
   showScreen("cards");
 }
 
-function toggleCardSelection(cardId) {
-  if (!state.collectedCards.has(cardId)) {
-    return;
-  }
-  if (state.selectedCards.has(cardId)) {
-    state.selectedCards.delete(cardId);
-    saveSelectedCards();
-    renderCardWall();
-    return;
-  }
-  if (state.selectedCards.size >= 3) {
-    showToast("最多选择 3 张卡牌", true);
-    return;
-  }
-  state.selectedCards.add(cardId);
-  saveSelectedCards();
-  renderCardWall();
+function openCardModal(card) {
+  state.currentViewingCard = card;
+  ui.cardModalImage.src = card.image;
+  ui.cardModalImage.alt = card.title;
+  ui.cardModalTitle.textContent = card.title;
+  ui.cardModal.classList.add("active");
 }
 
-function clearSelectedCards() {
-  if (!state.selectedCards.size) {
-    return;
-  }
-  state.selectedCards.clear();
-  saveSelectedCards();
-  renderCardWall();
-}
-
-function updateSelectedList() {
-  if (ui.selectedCount) {
-    ui.selectedCount.textContent = String(state.selectedCards.size);
-  }
-  if (!ui.selectedList) {
-    return;
-  }
-  ui.selectedList.innerHTML = "";
-  if (state.selectedCards.size === 0) {
-    const empty = document.createElement("span");
-    empty.className = "selected-pill";
-    empty.textContent = "还未选择卡牌";
-    ui.selectedList.appendChild(empty);
-    return;
-  }
-  getSelectedCardsList().forEach((card) => {
-    const pill = document.createElement("span");
-    pill.className = "selected-pill";
-    pill.textContent = card.title;
-    ui.selectedList.appendChild(pill);
-  });
+function closeCardModal() {
+  ui.cardModal.classList.remove("active");
+  state.currentViewingCard = null;
 }
 
 function updateCardEcho() {
-  if (!ui.resultCardEcho) {
-    return;
-  }
-  const selected = getSelectedCardsList();
-  if (selected.length !== 3) {
+  if (!ui.resultCardEcho) return;
+
+  if (!state.hasDrawn || state.drawnCards.length !== 3) {
     ui.resultCardEcho.textContent = "";
     ui.resultCardEcho.classList.add("is-hidden");
     return;
   }
-  const sentence = composeCardSentence(selected);
-  state.cardEcho = { sentence, cards: selected };
+
+  const sentence = composeCardSentence(state.drawnCards);
+  state.cardEcho = { sentence, cards: state.drawnCards };
   ui.resultCardEcho.textContent = `卡牌回声：${sentence}`;
   ui.resultCardEcho.classList.remove("is-hidden");
-}
-
-function getCardById(cardId) {
-  return state.cards.find((card) => card.id === cardId);
-}
-
-function getSelectedCardsList() {
-  return Array.from(state.selectedCards)
-    .map((cardId) => getCardById(cardId))
-    .filter(Boolean);
 }
 
 function composeCardSentence(cards) {
@@ -626,9 +556,7 @@ function composeCardSentence(cards) {
 }
 
 function normalizeSentenceFragment(text) {
-  if (!text) {
-    return "";
-  }
+  if (!text) return "";
   return text.replace(/[。！？；,.，!？;]+$/g, "");
 }
 

@@ -80,6 +80,17 @@
         </div>
       </div>
 
+      <div class="draw-cards-section">
+        <h3>抽取卡牌</h3>
+        <p class="draw-desc">点击卡牌翻开查看</p>
+        <div id="drawCardsGrid" class="draw-cards-grid">
+          <div class="draw-card-slot" data-slot="0"><span class="draw-card-question">?</span></div>
+          <div class="draw-card-slot" data-slot="1"><span class="draw-card-question">?</span></div>
+          <div class="draw-card-slot" data-slot="2"><span class="draw-card-question">?</span></div>
+        </div>
+        <button id="redrawCardsBtn" class="btn btn-ghost">重新抽取</button>
+      </div>
+
       <div class="share-box">
         <label for="shareText">分享文案</label>
         <textarea id="shareText" rows="3" readonly></textarea>
@@ -98,19 +109,8 @@
     <section id="cards" class="screen">
       <div class="result-hero">
         <p class="kicker">卡牌墙</p>
-        <h2>
-          已收集 <span id="cardCount">0</span> / <span id="cardTotal">60</span>
-        </h2>
-        <p class="result-desc">每次选择都会解锁对应卡牌。</p>
-      </div>
-
-      <div class="card-select">
-        <p class="result-desc">从已获得卡牌中选择 3 张，结果页将随机引用其中一张。</p>
-        <div class="card-select-meta">
-          <span>已选 <span id="selectedCount">0</span> / 3</span>
-          <button id="clearSelectionBtn" class="btn btn-ghost btn-small" type="button">清空选择</button>
-        </div>
-        <div id="selectedList" class="selected-list"></div>
+        <h2>已收集 <span id="cardCount">0</span> / <span id="cardTotal">60</span></h2>
+        <p class="result-desc">点击卡牌查看详情，抽取的卡牌会显示图片</p>
       </div>
 
       <div id="cardGrid" class="card-grid"></div>
@@ -120,6 +120,17 @@
         <button id="cardsBackResult" class="btn btn-primary">返回结果</button>
       </div>
     </section>
+
+    <div id="cardModal" class="card-modal">
+      <div class="card-modal-content">
+        <button id="cardModalClose" class="card-modal-close" aria-label="关闭">×</button>
+        <img id="cardModalImage" class="card-modal-image" src="" alt="">
+        <h3 id="cardModalTitle" class="card-modal-title"></h3>
+        <div class="card-modal-actions">
+          <button id="cardModalCancel" class="btn btn-ghost">关闭</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <div id="toast" class="toast" aria-live="polite"></div>
