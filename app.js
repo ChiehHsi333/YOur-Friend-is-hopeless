@@ -367,6 +367,36 @@ function openProfile() {
 
   renderScoreListTo(scores, ui.profileScoreList);
   renderRadarChartTo(scores, ui.profileRadar);
+
+  // Rebuild collected cards from historical attempts (multi-run collection)
+  rebuildCollectedFromHistory();
+
+  // Initialize the draw-cards area for the profile page
+  initDrawCardsSection();
+}
+
+// Build `state.collectedCards` from `state.attemptHistory` and current answers
+function rebuildCollectedFromHistory() {
+  state.collectedCards = new Set(state.collectedCards || []);
+
+  // include current answers in case user has partial progress
+  const includeAnswerMap = (answerMap) => {
+    Object.entries(answerMap || {}).forEach(([qid, ans]) => {
+      const qidNum = Number(qid);
+      const opt = ans?.optionId;
+      if (qidNum && opt) {
+        state.collectedCards.add(getCardId(qidNum, opt));
+      }
+    });
+  };
+
+  // include answers from each historical attempt
+  (state.attemptHistory || []).forEach((attempt) => {
+    includeAnswerMap(attempt.answerMap);
+  });
+
+  // include current in-progress answers as well
+  includeAnswerMap(state.answerMap);
 }
 
 function showResult() {
