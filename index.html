@@ -14,17 +14,16 @@
   <main class="app">
     <section id="intro" class="screen active">
       <div class="hero">
-        <p class="kicker">15 题 · 6 维度画像</p>
-        <h1>你这朋友算是废了</h1>
-        <p class="lead">每题 4 个选项，选完出一张画像。你也可以回头修改，但结果不会替你心软。</p>
+        <p class="kicker">15 题 · 6 维度画像测试</p>
+        <h1>行为画像测试</h1>
+        <p class="lead">回答 15 道问题，系统将记录你的答题数据并生成综合画像。支持多次答题取平均值。</p>
         <div class="intro-meta">
           <span>共 15 题</span>
-          <span>15 核心标签 + 特殊标签</span>
-          <span>6 维度评语</span>
+          <span>6 维度评分</span>
+          <span>多次答题取平均值</span>
         </div>
         <div class="hero-actions">
           <button id="startBtn" class="btn btn-primary">开始测试</button>
-          <button id="openCardsIntroBtn" class="btn btn-ghost">卡牌墙</button>
         </div>
       </div>
     </section>
@@ -90,7 +89,7 @@
       </div>
 
       <div class="result-actions">
-        <button id="restartBtn" class="btn btn-primary">重新开始</button>
+        <button id="finishBtn" class="btn btn-primary">完成</button>
         <button id="openCardsResultBtn" class="btn btn-ghost">查看卡牌墙</button>
       </div>
     </section>
@@ -116,11 +115,43 @@
       <div id="cardGrid" class="card-grid"></div>
 
       <div class="nav">
-        <button id="cardsBackIntro" class="btn btn-ghost">返回开始</button>
-        <button id="cardsBackResult" class="btn btn-primary">返回结果</button>
+        <button id="cardsBackBtn" class="btn btn-primary">返回</button>
+      </div>
+    </section>
+
+    <section id="profile" class="screen">
+      <div class="result-hero">
+        <p class="kicker">我的画像 · 实时</p>
+        <h2 id="profileLabel">结果标题</h2>
+        <p id="profileDescription" class="result-desc">结果描述</p>
+        <p id="profileProgressHint" class="result-desc" style="margin-top:8px;color:var(--muted);font-size:14px;"></p>
+      </div>
+
+      <div class="result-grid">
+        <div class="comment-box">
+          <h3>综合评语</h3>
+          <div class="radar-wrap">
+            <canvas id="profileRadar" width="240" height="240"></canvas>
+          </div>
+          <p id="profileComment"></p>
+        </div>
+
+        <div class="score-box">
+          <h3>属性统计</h3>
+          <div id="profileScoreList" class="score-list"></div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button id="openCardsProfileBtn" class="btn btn-ghost">查看卡牌墙</button>
       </div>
     </section>
   </main>
+
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav-item active" data-nav="home" id="navHome">测试页面</button>
+    <button class="bottom-nav-item" data-nav="profile" id="navProfile">我的</button>
+  </nav>
 
   <div id="toast" class="toast" aria-live="polite"></div>
   <script src="./app.js" defer></script>

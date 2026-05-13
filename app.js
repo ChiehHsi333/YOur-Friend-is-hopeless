@@ -13,6 +13,8 @@ const AUTO_ADVANCE_DELAY = 1100;
 const FADE_DURATION = 280;
 const CARD_STORAGE_KEY = "failure-card-collection";
 const CARD_SELECTION_KEY = "failure-card-selection";
+const ATTEMPT_HISTORY_KEY = "failure-attempt-history";
+const CURRENT_ANSWER_KEY = "failure-current-answers";
 
 const state = {
   questions: [],
@@ -29,7 +31,8 @@ const state = {
   comment: null,
   maxScores: null,
   autoAdvance: null,
-  previousScreen: "intro"
+  previousScreen: "intro",
+  attemptHistory: []
 };
 
 const ui = {
@@ -57,24 +60,40 @@ const ui = {
   shareText: document.getElementById("shareText"),
   copyBtn: document.getElementById("copyBtn"),
   downloadBtn: document.getElementById("downloadBtn"),
-  restartBtn: document.getElementById("restartBtn"),
+  finishBtn: document.getElementById("finishBtn"),
   toast: document.getElementById("toast"),
   cards: document.getElementById("cards"),
-  openCardsIntroBtn: document.getElementById("openCardsIntroBtn"),
   openCardsResultBtn: document.getElementById("openCardsResultBtn"),
-  cardsBackIntroBtn: document.getElementById("cardsBackIntro"),
-  cardsBackResultBtn: document.getElementById("cardsBackResult"),
+  openCardsProfileBtn: document.getElementById("openCardsProfileBtn"),
+  cardsBackBtn: document.getElementById("cardsBackBtn"),
   cardGrid: document.getElementById("cardGrid"),
   cardCount: document.getElementById("cardCount"),
   cardTotal: document.getElementById("cardTotal"),
   selectedCount: document.getElementById("selectedCount"),
   selectedList: document.getElementById("selectedList"),
-  clearSelectionBtn: document.getElementById("clearSelectionBtn")
+  clearSelectionBtn: document.getElementById("clearSelectionBtn"),
+  profile: document.getElementById("profile"),
+  profileLabel: document.getElementById("profileLabel"),
+  profileDescription: document.getElementById("profileDescription"),
+  profileComment: document.getElementById("profileComment"),
+  profileScoreList: document.getElementById("profileScoreList"),
+  profileRadar: document.getElementById("profileRadar"),
+  openCardsProfileBtn: document.getElementById("openCardsProfileBtn"),
+  profileProgressHint: document.getElementById("profileProgressHint"),
+  bottomNav: document.getElementById("bottomNav"),
+  navHome: document.getElementById("navHome"),
+  navProfile: document.getElementById("navProfile")
 };
 
 init();
 
 async function init() {
+  // 临时清空：答题历史与当前进度
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(ATTEMPT_HISTORY_KEY);
+    localStorage.removeItem(CURRENT_ANSWER_KEY);
+  }
+
   const [questions, outcomes, comments] = await Promise.all([
     loadJson("./data/questions.json"),
     loadJson("./data/outcomes.json"),
@@ -94,6 +113,8 @@ async function init() {
   state.selectedCards = loadSelectedCards();
   normalizeCardSets();
   state.maxScores = computeMaxScores(questions);
+  state.attemptHistory = loadAttemptHistory();
+  state.answerMap = loadCurrentAnswers();
   ui.progressTotal.textContent = questions.length;
   if (ui.progressBar) {
     ui.progressBar.setAttribute("aria-valuemax", String(questions.length));
@@ -108,17 +129,18 @@ async function init() {
 }
 
 function bindEvents() {
-  ui.startBtn.addEventListener("click", startQuiz);
+  ui.startBtn.addEventListener("click", handleStart);
   ui.prevBtn.addEventListener("click", goPrev);
   ui.nextBtn.addEventListener("click", goNext);
   ui.copyBtn.addEventListener("click", copyShareText);
   ui.downloadBtn.addEventListener("click", downloadResultCard);
-  ui.restartBtn.addEventListener("click", startQuiz);
-  ui.openCardsIntroBtn?.addEventListener("click", () => openCardWall("intro"));
+  ui.finishBtn?.addEventListener("click", handleFinish);
   ui.openCardsResultBtn?.addEventListener("click", () => openCardWall("result"));
-  ui.cardsBackIntroBtn?.addEventListener("click", () => showScreen("intro"));
-  ui.cardsBackResultBtn?.addEventListener("click", () => showScreen("result"));
+  ui.openCardsProfileBtn?.addEventListener("click", () => openCardWall("profile"));
+  ui.cardsBackBtn?.addEventListener("click", () => showScreen(state.previousScreen || "intro"));
   ui.clearSelectionBtn?.addEventListener("click", clearSelectedCards);
+  ui.navHome?.addEventListener("click", onNavQuiz);
+  ui.navProfile?.addEventListener("click", onNavProfile);
 }
 
 async function loadJson(path) {
@@ -138,12 +160,52 @@ function showScreen(name) {
   ui.quiz.classList.toggle("active", name === "quiz");
   ui.result.classList.toggle("active", name === "result");
   ui.cards?.classList.toggle("active", name === "cards");
+  ui.profile?.classList.toggle("active", name === "profile");
   if (name !== "cards") {
     state.previousScreen = name;
   }
   if (name === "result") {
     updateCardEcho();
   }
+  if (name === "profile") {
+    openProfile();
+  }
+  updateBottomNav(name);
+}
+
+function handleStart() {
+  const answered = Object.keys(state.answerMap).length;
+  if (answered > 0 && !state.result) {
+    showScreen("quiz");
+    return;
+  }
+  startQuiz();
+}
+
+function onNavQuiz() {
+  showScreen("intro");
+}
+
+function onNavProfile() {
+  showScreen("profile");
+}
+
+function updateBottomNav(name) {
+  if (!ui.navHome || !ui.navProfile) {
+    return;
+  }
+  ui.navHome.classList.toggle("active", name !== "profile");
+  ui.navProfile.classList.toggle("active", name === "profile");
+}
+
+function handleFinish() {
+  state.result = null;
+  state.comment = null;
+  state.scores = null;
+  state.answerMap = {};
+  state.currentIndex = 0;
+  saveCurrentAnswers();
+  showScreen("intro");
 }
 
 function startQuiz() {
@@ -153,6 +215,7 @@ function startQuiz() {
   state.scores = null;
   state.result = null;
   state.comment = null;
+  saveCurrentAnswers();
   renderQuestion();
   showScreen("quiz");
 }
@@ -232,6 +295,7 @@ function selectOption(question, option) {
     optionId: option.id,
     weights: option.weights
   };
+  saveCurrentAnswers();
   unlockCard(question.id, option.id);
   renderQuestion();
   const indexSnapshot = state.currentIndex;
@@ -243,10 +307,74 @@ function selectOption(question, option) {
   }, AUTO_ADVANCE_DELAY);
 }
 
+function openProfile() {
+  const hasHistory = state.attemptHistory.length > 0;
+  const currentAnswered = Object.keys(state.answerMap).length;
+  const total = state.questions.length || 1;
+
+  if (!hasHistory && currentAnswered === 0) {
+    ui.profileLabel.textContent = "尚未开始";
+    ui.profileDescription.textContent = "你还没有回答任何问题，开始答题以生成画像。";
+    ui.profileComment.textContent = "";
+    ui.profileScoreList.innerHTML = "";
+    if (ui.profileRadar) {
+      const ctx = ui.profileRadar.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, ui.profileRadar.width, ui.profileRadar.height);
+      }
+    }
+    if (ui.profileProgressHint) {
+      ui.profileProgressHint.textContent = "";
+    }
+    return;
+  }
+
+  let scores;
+  let sourceHint = "";
+
+  if (hasHistory) {
+    scores = computeAverageScores();
+    sourceHint = `基于 ${state.attemptHistory.length} 次答题的平均值`;
+  } else {
+    scores = computeScores();
+  }
+
+  const outcome = selectOutcome(scores);
+  const comment = selectComment(scores);
+
+  ui.profileLabel.textContent = outcome.label;
+  ui.profileDescription.textContent = outcome.description;
+  ui.profileComment.textContent = comment.text;
+
+  if (ui.profileProgressHint) {
+    if (hasHistory) {
+      ui.profileProgressHint.textContent = sourceHint;
+    } else {
+      const remaining = total - currentAnswered;
+      if (remaining > 0) {
+        ui.profileProgressHint.textContent = `已答 ${currentAnswered} / ${total} 题，剩余 ${remaining} 题。结果可能随答题继续变化。`;
+      } else {
+        ui.profileProgressHint.textContent = `全部 ${total} 题已答完，此为最终结果预览。`;
+      }
+    }
+  }
+
+  renderScoreListTo(scores, ui.profileScoreList);
+  renderRadarChartTo(scores, ui.profileRadar);
+}
+
 function showResult() {
   state.scores = computeScores();
   const outcome = selectOutcome(state.scores);
   const comment = selectComment(state.scores);
+
+  state.attemptHistory.push({
+    timestamp: Date.now(),
+    answerMap: JSON.parse(JSON.stringify(state.answerMap)),
+    scores: { ...state.scores }
+  });
+  saveAttemptHistory();
+  clearCurrentAnswers();
 
   state.result = outcome;
   state.comment = comment;
@@ -530,11 +658,11 @@ function updateCardMeta() {
 }
 
 function updateCardNav() {
-  if (!ui.cardsBackResultBtn) {
+  if (!ui.cardsBackBtn) {
     return;
   }
-  const showResultBack = Boolean(state.result);
-  ui.cardsBackResultBtn.classList.toggle("is-hidden", !showResultBack);
+  const labelMap = { result: "返回结果", profile: "返回我的", intro: "返回" };
+  ui.cardsBackBtn.textContent = labelMap[state.previousScreen] || "返回";
 }
 
 function openCardWall(from) {
@@ -633,7 +761,14 @@ function normalizeSentenceFragment(text) {
 }
 
 function renderScoreList(scores) {
-  ui.scoreList.innerHTML = "";
+  renderScoreListTo(scores, ui.scoreList);
+}
+
+function renderScoreListTo(scores, container) {
+  if (!container) {
+    return;
+  }
+  container.innerHTML = "";
   ATTRS.forEach((attr) => {
     const maxValue = state.maxScores?.[attr.id] ?? scores[attr.id] ?? 0;
     const percent = maxValue ? Math.round((scores[attr.id] / maxValue) * 100) : 0;
@@ -646,12 +781,15 @@ function renderScoreList(scores) {
       </div>
       <div class="score-bar"><span style="width: ${percent}%"></span></div>
     `;
-    ui.scoreList.appendChild(row);
+    container.appendChild(row);
   });
 }
 
 function renderRadarChart(scores) {
-  const canvas = ui.radarCanvas;
+  renderRadarChartTo(scores, ui.radarCanvas);
+}
+
+function renderRadarChartTo(scores, canvas) {
   if (!canvas) {
     return;
   }
@@ -853,4 +991,67 @@ function clearAutoAdvance() {
     window.clearTimeout(state.autoAdvance);
     state.autoAdvance = null;
   }
+}
+
+function loadAttemptHistory() {
+  if (typeof localStorage === "undefined") {
+    return [];
+  }
+  try {
+    const raw = localStorage.getItem(ATTEMPT_HISTORY_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveAttemptHistory() {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+  localStorage.setItem(ATTEMPT_HISTORY_KEY, JSON.stringify(state.attemptHistory));
+}
+
+function loadCurrentAnswers() {
+  if (typeof localStorage === "undefined") {
+    return {};
+  }
+  try {
+    const raw = localStorage.getItem(CURRENT_ANSWER_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveCurrentAnswers() {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+  localStorage.setItem(CURRENT_ANSWER_KEY, JSON.stringify(state.answerMap));
+}
+
+function clearCurrentAnswers() {
+  if (typeof localStorage === "undefined") {
+    return;
+  }
+  localStorage.removeItem(CURRENT_ANSWER_KEY);
+}
+
+function computeAverageScores() {
+  const totals = createEmptyScores();
+  const count = state.attemptHistory.length;
+  if (count === 0) {
+    return totals;
+  }
+  state.attemptHistory.forEach((attempt) => {
+    ATTRS.forEach((attr) => {
+      totals[attr.id] += attempt.scores[attr.id] || 0;
+    });
+  });
+  ATTRS.forEach((attr) => {
+    totals[attr.id] = Math.round(totals[attr.id] / count);
+  });
+  return totals;
 }
