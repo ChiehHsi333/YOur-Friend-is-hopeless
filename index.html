@@ -10,12 +10,53 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <!-- 手绘粗糙边缘滤镜定义 -->
+  <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <filter id="rough-edge">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+      <filter id="sketchy-line">
+        <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
   <div class="bg-grid"></div>
   <main class="app">
     <section id="intro" class="screen active">
       <div class="hero">
         <p class="kicker">15 题 · 6 维度画像测试</p>
         <h1>你这朋友算是废了</h1>
+        <!-- 黄色系手绘装饰角色 -->
+        <div class="hero-decor" aria-hidden="true">
+          <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg" class="hero-decor-svg">
+            <!-- 躺平的黄色小人 — 手绘涂鸦风 -->
+            <ellipse cx="100" cy="95" rx="70" ry="30" fill="#F5C842" opacity="0.3" stroke="#E5A820" stroke-width="2"/>
+            <!-- 身体 — 不规则椭圆 -->
+            <path d="M45 85 Q40 75 55 68 Q80 58 120 62 Q160 66 165 82 Q168 95 150 100 Q110 108 65 100 Q48 96 45 85Z" fill="#FCD34D" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- 头 — 稍微偏的圆 -->
+            <circle cx="138" cy="58" r="22" fill="#FDE68A" stroke="#D97706" stroke-width="2.5"/>
+            <!-- 表情 — 无奈/躺平 -->
+            <line x1="130" y1="54" x2="142" y2="52" stroke="#92400E" stroke-width="2" stroke-linecap="round"/>
+            <line x1="130" y1="60" x2="138" y2="62" stroke="#92400E" stroke-width="2" stroke-linecap="round"/>
+            <path d="M146 63 Q152 66 148 69" stroke="#92400E" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+            <!-- 手臂 — 摊开 -->
+            <path d="M55 78 Q35 72 25 80" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M155 75 Q175 68 185 78" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <!-- 腿 -->
+            <path d="M70 98 Q60 115 50 120" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M115 100 Q125 118 135 122" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <!-- 涂鸦装饰 — 星星/火花 -->
+            <text x="28" y="52" font-size="20" fill="#F59E0B" opacity="0.7">✦</text>
+            <text x="172" y="42" font-size="14" fill="#F59E0B" opacity="0.5">✦</text>
+            <text x="20" y="110" font-size="12" fill="#F59E0B" opacity="0.4">✦</text>
+            <!-- 小汗滴 -->
+            <path d="M158 48 Q162 42 160 38" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+          </svg>
+        </div>
         <p class="lead">回答 15 道问题，系统将记录你的答题数据并生成综合画像。支持多次答题取平均值。</p>
         <div class="intro-meta">
           <span>共 15 题</span>
