@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "express": "^5.2.1",
     "pdfjs-dist": "^4.8.69",
     "sharp": "^0.34.5"
   }

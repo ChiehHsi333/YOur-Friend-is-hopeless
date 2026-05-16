@@ -25,7 +25,55 @@
   </svg>
 
   <div class="bg-grid"></div>
-  <main class="app">
+    <!-- 登录/注册弹窗 -->
+    <div id="authModal" class="auth-modal-overlay">
+      <div class="auth-modal">
+        <button id="authCloseBtn" class="auth-close-btn" aria-label="关闭">&times;</button>
+        <h2 class="auth-title">你这朋友算是废了</h2>
+        <p class="auth-subtitle">账号系统</p>
+
+        <div id="authRegister" class="auth-panel active">
+          <h3>注册号主</h3>
+          <p class="auth-hint">创建你的专属空间，邀请好友来测试你</p>
+          <div id="regForm">
+            <input id="regNickname" type="text" placeholder="输入昵称" maxlength="20" class="auth-input">
+            <button id="registerBtn" class="btn btn-primary btn--xl">
+              创建账号
+            </button>
+          </div>
+          <div id="regSuccess" class="reg-success is-hidden">
+            <p class="reg-success-title">注册成功！</p>
+            <p class="reg-success-hint">请保存好你的用户 ID，换设备登录时需要用到：</p>
+            <div class="reg-id-box">
+              <input id="regUserId" type="text" readonly class="auth-input auth-input-mono">
+              <button id="copyRegUserIdBtn" class="btn btn-primary">复制</button>
+            </div>
+            <p class="reg-success-warn">注意：ID 仅显示一次，丢失无法找回</p>
+            <button id="goHomeBtn" class="btn btn-primary btn--xl">进入首页</button>
+          </div>
+        </div>
+
+        <div id="authLogin" class="auth-panel">
+          <h3>登录</h3>
+          <p class="auth-hint">输入你的用户 ID 登录（不是昵称）</p>
+          <input id="loginUserId" type="text" placeholder="粘贴用户ID，例如：a1b2c3d4e5f6" class="auth-input auth-input-mono">
+          <button id="loginBtn" class="btn btn-primary btn--xl">
+            登录
+          </button>
+        </div>
+
+        <div class="auth-switch">
+          <span id="authSwitchText">已有账号？去登录</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 好友答题模式横幅 -->
+    <div id="friendBanner" class="friend-banner is-hidden">
+      <span class="friend-banner-text">正在为 <strong id="friendBannerName"></strong> 作答</span>
+    </div>
+
+    <main class="app">
     <section id="intro" class="screen active">
       <h1 class="hero-title">你这朋友算是废了</h1>
       <div class="hero-bg">
@@ -37,6 +85,14 @@
           开始测试
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
+        <div id="ownerActions" class="owner-actions is-hidden">
+          <p class="owner-hint">号主无法为自己测试<br>邀请好友来测测你吧</p>
+          <button id="ownerInviteBtn" class="btn btn-primary">
+            <span class="btn-icon-doodle">↗</span>
+            复制邀请链接
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -87,6 +143,14 @@
         <p id="resultCardEcho" class="result-card is-hidden"></p>
       </div>
 
+      <!-- 好友模式提交成功提示 -->
+      <div id="friendSubmitSuccess" class="friend-success is-hidden">
+        <div class="friend-success-icon">✓</div>
+        <h3>答案已送达！</h3>
+        <p>你的回答已经记录到号主的数据中啦。</p>
+      </div>
+
+      <div id="ownerResultContent" class="result-body">
       <div class="result-grid">
         <div class="comment-box">
           <h3>综合评语</h3>
@@ -129,6 +193,7 @@
           查看卡牌墙
         </button>
       </div>
+      </div><!-- /ownerResultContent -->
     </section>
 
     <section id="cards" class="screen">
@@ -151,6 +216,20 @@
         <h2 id="profileLabel">结果标题</h2>
         <p id="profileDescription" class="result-desc">结果描述</p>
         <p id="profileProgressHint" class="result-desc" style="margin-top:8px;color:var(--muted);font-size:14px;"></p>
+      </div>
+
+      <!-- 邀请好友区域 -->
+      <div class="invite-box">
+        <h3>邀请好友</h3>
+        <p class="invite-hint">复制专属链接，邀请好友来测试你</p>
+        <div class="invite-url-wrap">
+          <input id="inviteUrlInput" type="text" readonly class="invite-url-input">
+          <button id="copyInviteBtn" class="btn btn-ghost">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            复制链接
+          </button>
+        </div>
+        <p id="friendCountHint" class="invite-count">已有 0 位好友作答</p>
       </div>
 
       <div class="result-grid">
@@ -220,6 +299,6 @@
   </nav>
 
   <div id="toast" class="toast" aria-live="polite"></div>
-  <script src="./app.js" defer></script>
+  <script src="./app.js?v=4" defer></script>
 </body>
 </html>

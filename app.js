@@ -13,6 +13,13 @@ const AUTO_ADVANCE_DELAY = 1100;
 const FADE_DURATION = 280;
 const ATTEMPT_HISTORY_KEY = "failure-attempt-history";
 const CURRENT_ANSWER_KEY = "failure-current-answers";
+const AUTH_USER_KEY = "failure-auth-user";
+
+// 解析 URL 参数获取邀请码
+function getUrlParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
 
 const state = {
   questions: [],
@@ -35,7 +42,12 @@ const state = {
   attemptHistory: [],
   hasDrawn: false,
   profileOutcome: null,
-  profileScores: null
+  profileScores: null,
+  // ===== 新增：账号系统 =====
+  currentUser: null,        // { userId, nickname }
+  isFriendMode: false,      // 是否为好友答题模式
+  ownerUserId: null,        // 好友模式下对应的号主 ID
+  friendProfileData: null   // 号主的聚合画像数据（从服务端拉取）
 };
 
 const ui = {
@@ -89,37 +101,277 @@ const ui = {
   cardModalClose: document.getElementById("cardModalClose"),
   cardModalCancel: document.getElementById("cardModalCancel"),
   drawCardsGrid: document.getElementById("drawCardsGrid"),
-  redrawCardsBtn: document.getElementById("redrawCardsBtn")
+  redrawCardsBtn: document.getElementById("redrawCardsBtn"),
+  // ===== 新增：账号系统 UI =====
+  authModal: document.getElementById("authModal"),
+  authCloseBtn: document.getElementById("authCloseBtn"),
+  authRegister: document.getElementById("authRegister"),
+  authLogin: document.getElementById("authLogin"),
+  regForm: document.getElementById("regForm"),
+  regNickname: document.getElementById("regNickname"),
+  registerBtn: document.getElementById("registerBtn"),
+  regSuccess: document.getElementById("regSuccess"),
+  regUserId: document.getElementById("regUserId"),
+  copyRegUserIdBtn: document.getElementById("copyRegUserIdBtn"),
+  goHomeBtn: document.getElementById("goHomeBtn"),
+  loginUserId: document.getElementById("loginUserId"),
+  loginBtn: document.getElementById("loginBtn"),
+  authSwitchText: document.getElementById("authSwitchText"),
+  friendBanner: document.getElementById("friendBanner"),
+  friendBannerName: document.getElementById("friendBannerName"),
+  friendSubmitSuccess: document.getElementById("friendSubmitSuccess"),
+  ownerResultContent: document.getElementById("ownerResultContent"),
+  inviteUrlInput: document.getElementById("inviteUrlInput"),
+  copyInviteBtn: document.getElementById("copyInviteBtn"),
+  friendCountHint: document.getElementById("friendCountHint"),
+  ownerActions: document.getElementById("ownerActions"),
+  ownerInviteBtn: document.getElementById("ownerInviteBtn")
 };
 
 init();
 
-async function init() {
-  const [questions, outcomes, comments] = await Promise.all([
-    loadJson("./data/questions.json"),
-    loadJson("./data/outcomes.json"),
-    loadJson("./data/comments.json")
-  ]);
+// 全局错误捕获
+window.addEventListener("error", (e) => {
+  console.error("[JS Error]", e.message, e.filename, e.lineno);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("[Promise Error]", e.reason);
+});
 
-  if (!questions || !outcomes || !comments) {
-    showToast("数据加载失败，请使用本地服务器打开。", true);
+async function init() {
+  try {
+    // 检测 URL 邀请参数
+    const inviteId = getUrlParam("invite");
+    if (inviteId) {
+      state.isFriendMode = true;
+      state.ownerUserId = inviteId;
+      // 好友模式不需要登录，直接进入测试
+    } else {
+      // 号主模式：尝试从 localStorage 恢复登录状态
+      state.currentUser = loadAuthUser();
+    }
+
+    // 先绑定事件，确保 UI 可交互
+    bindEvents();
+
+    const [questions, outcomes, comments] = await Promise.all([
+      loadJson("./data/questions.json"),
+      loadJson("./data/outcomes.json"),
+      loadJson("./data/comments.json")
+    ]);
+
+    if (!questions || !outcomes || !comments) {
+      showToast("数据加载失败，请确认服务器正常运行。", true);
+      console.error("[Init] 数据加载失败，请检查 data/ 目录和服务器");
+      return;
+    }
+
+    state.questions = questions;
+    state.outcomes = outcomes;
+    state.comments = comments;
+    state.cards = buildCardsFromQuestions(questions);
+    state.maxScores = computeMaxScores(questions);
+    state.attemptHistory = loadAttemptHistory();
+    state.answerMap = loadCurrentAnswers();
+    ui.progressTotal.textContent = questions.length;
+    if (ui.progressBar) {
+      ui.progressBar.setAttribute("aria-valuemax", String(questions.length));
+    }
+
+    // 根据模式决定初始页面
+    if (state.isFriendMode) {
+      // 好友模式：获取号主昵称并显示横幅，等待用户点击开始测试
+      await fetchOwnerInfo(inviteId);
+      showFriendBanner(state.friendProfileData?.nickname || "号主");
+      if (ui.startBtn) ui.startBtn.classList.remove("is-hidden");
+      if (ui.ownerActions) ui.ownerActions.classList.add("is-hidden");
+      // 不自动开始，由用户点击按钮触发
+    } else {
+      // 号主模式：需要登录
+      if (state.currentUser) {
+        showScreen("intro");
+        loadInviteUrl();
+        // 号主模式：隐藏开始测试，显示邀请引导
+        if (ui.startBtn) ui.startBtn.classList.add("is-hidden");
+        if (ui.ownerActions) ui.ownerActions.classList.remove("is-hidden");
+        if (ui.navHome) ui.navHome.textContent = "邀请测试";
+      } else {
+        showAuthModal();
+      }
+    }
+  } catch (err) {
+    console.error("[Init] 初始化失败:", err);
+    showToast("初始化出错，请刷新页面重试。", true);
+  }
+}
+
+// ===== API 调用封装 =====
+const API_BASE = "";
+
+async function apiPost(path, data) {
+  const res = await fetch(API_BASE + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "请求失败" }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function apiGet(path) {
+  const res = await fetch(API_BASE + path);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "请求失败" }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ===== 账号系统 =====
+function showAuthModal() {
+  ui.authModal?.classList.add("active");
+}
+
+function hideAuthModal() {
+  ui.authModal?.classList.remove("active");
+}
+
+function loadAuthUser() {
+  try {
+    const raw = localStorage.getItem(AUTH_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveAuthUser(user) {
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+}
+
+function clearAuthUser() {
+  localStorage.removeItem(AUTH_USER_KEY);
+}
+
+let authPanel = "register"; // 'register' | 'login'
+function toggleAuthPanel() {
+  authPanel = authPanel === "register" ? "login" : "register";
+  ui.authRegister?.classList.toggle("active", authPanel === "register");
+  ui.authLogin?.classList.toggle("active", authPanel === "login");
+  ui.authSwitchText.textContent = authPanel === "register"
+    ? "已有账号？去登录"
+    : "没有账号？去注册";
+}
+
+async function handleRegister() {
+  const nickname = ui.regNickname?.value.trim();
+  if (!nickname) {
+    showToast("请输入昵称", true);
     return;
   }
-
-  state.questions = questions;
-  state.outcomes = outcomes;
-  state.comments = comments;
-  state.cards = buildCardsFromQuestions(questions);
-  state.maxScores = computeMaxScores(questions);
-  state.attemptHistory = loadAttemptHistory();
-  state.answerMap = loadCurrentAnswers();
-  ui.progressTotal.textContent = questions.length;
-  if (ui.progressBar) {
-    ui.progressBar.setAttribute("aria-valuemax", String(questions.length));
+  try {
+    const data = await apiPost("/api/auth/register", { nickname });
+    state.currentUser = { userId: data.userId, nickname: data.nickname };
+    saveAuthUser(state.currentUser);
+    // 显示注册成功面板，展示 userId
+    ui.regForm?.classList.add("is-hidden");
+    ui.regSuccess?.classList.remove("is-hidden");
+    if (ui.regUserId) ui.regUserId.value = data.userId;
+  } catch (e) {
+    showToast(e.message || "注册失败", true);
   }
+}
 
-  bindEvents();
+function enterHomeFromRegister() {
+  hideAuthModal();
+  showToast(`欢迎, ${state.currentUser?.nickname}!`);
+  loadInviteUrl();
   showScreen("intro");
+}
+
+async function handleLogin() {
+  const userId = ui.loginUserId?.value.trim();
+  if (!userId) {
+    showToast("请输入用户ID", true);
+    return;
+  }
+  try {
+    const data = await apiPost("/api/auth/login", { userId });
+    state.currentUser = { userId: data.userId, nickname: data.nickname };
+    saveAuthUser(state.currentUser);
+    hideAuthModal();
+    showToast(`欢迎回来, ${data.nickname}!`);
+    loadInviteUrl();
+    showScreen("intro");
+  } catch (e) {
+    showToast(e.message || "登录失败", true);
+  }
+}
+
+// ===== 好友模式 =====
+function showFriendBanner(ownerName) {
+  if (ui.friendBannerName) ui.friendBannerName.textContent = ownerName;
+  ui.friendBanner?.classList.remove("is-hidden");
+  if (ui.bottomNav) ui.bottomNav.style.display = "none"; // 好友模式隐藏底部导航
+}
+
+function hideFriendBanner() {
+  ui.friendBanner?.classList.add("is-hidden");
+  if (ui.bottomNav) ui.bottomNav.style.display = "";
+}
+
+async function fetchOwnerInfo(userId) {
+  try {
+    const data = await apiGet(`/api/user/${userId}/share`);
+    state.friendProfileData = data;
+  } catch {
+    state.friendProfileData = { nickname: "号主" };
+  }
+}
+
+async function submitToOwner(answerMap, scores) {
+  if (!state.ownerUserId) return false;
+  try {
+    await apiPost(`/api/user/${state.ownerUserId}/response`, { answerMap, scores });
+    return true;
+  } catch (e) {
+    console.error("提交失败:", e);
+    showToast("提交失败，请重试", true);
+    return false;
+  }
+}
+
+async function fetchProfileData(userId) {
+  try {
+    const data = await apiGet(`/api/user/${userId}/profile`);
+    return data;
+  } catch (e) {
+    console.error("拉取画像数据失败:", e);
+    return null;
+  }
+}
+
+async function loadInviteUrl() {
+  if (!state.currentUser) return;
+  try {
+    const data = await apiGet(`/api/user/${state.currentUser.userId}/share`);
+    if (ui.inviteUrlInput) ui.inviteUrlInput.value = data.inviteUrl;
+    if (ui.friendCountHint) ui.friendCountHint.textContent = `已有 ${data.responseCount} 位好友作答`;
+  } catch {
+    // 静默处理
+  }
+}
+
+function copyInviteUrl() {
+  const url = ui.inviteUrlInput?.value;
+  if (!url) return;
+  navigator.clipboard?.writeText(url).then(
+    () => showToast("邀请链接已复制"),
+    () => showToast("复制失败，请手动复制", true)
+  );
 }
 
 function bindEvents() {
@@ -140,6 +392,39 @@ function bindEvents() {
     if (e.target === ui.cardModal) closeCardModal();
   });
   ui.redrawCardsBtn?.addEventListener("click", redrawCards);
+
+  // ===== 账号系统事件 =====
+  ui.authCloseBtn?.addEventListener("click", () => {
+    // 如果未登录，关闭弹窗后仍需登录
+    if (!state.currentUser) {
+      showToast("请先登录或注册");
+      return;
+    }
+    hideAuthModal();
+  });
+  ui.registerBtn?.addEventListener("click", handleRegister);
+  ui.loginBtn?.addEventListener("click", handleLogin);
+  ui.authSwitchText?.addEventListener("click", toggleAuthPanel);
+  ui.regNickname?.addEventListener("keydown", (e) => { if (e.key === "Enter") handleRegister(); });
+  ui.loginUserId?.addEventListener("keydown", (e) => { if (e.key === "Enter") handleLogin(); });
+
+  // 邀请相关
+  ui.copyInviteBtn?.addEventListener("click", copyInviteUrl);
+  ui.ownerInviteBtn?.addEventListener("click", () => {
+    copyInviteUrl();
+    showToast("邀请链接已复制，快去分享给好友吧！");
+  });
+
+  // 注册成功面板
+  ui.copyRegUserIdBtn?.addEventListener("click", () => {
+    const id = ui.regUserId?.value;
+    if (!id) return;
+    navigator.clipboard?.writeText(id).then(
+      () => showToast("用户ID已复制"),
+      () => showToast("复制失败，请手动复制", true)
+    );
+  });
+  ui.goHomeBtn?.addEventListener("click", enterHomeFromRegister);
 }
 
 async function loadJson(path) {
@@ -154,7 +439,7 @@ async function loadJson(path) {
   }
 }
 
-function showScreen(name) {
+async function showScreen(name) {
   ui.intro.classList.toggle("active", name === "intro");
   ui.quiz.classList.toggle("active", name === "quiz");
   ui.result.classList.toggle("active", name === "result");
@@ -167,30 +452,51 @@ function showScreen(name) {
     updateCardEcho();
   }
   if (name === "profile") {
-    openProfile();
+    await openProfile();
   }
   updateBottomNav(name);
 }
 
 function handleStart() {
-  const answered = Object.keys(state.answerMap).length;
-  if (answered > 0 && !state.result) {
-    showScreen("quiz");
+  // 好友模式：直接进入测试
+  if (state.isFriendMode) {
+    startQuiz();
     return;
   }
-  startQuiz();
+  // 号主模式：需要先登录
+  if (!state.currentUser) {
+    showAuthModal();
+    return;
+  }
+  // 号主不能为自己测试，复制邀请链接
+  copyInviteUrl();
+  showToast("邀请链接已复制，快去分享给好友吧！");
 }
 
 function onNavQuiz() {
-  // 已进入过测试 → 跳到答题页；否则回首页
-  if (state.result || Object.keys(state.answerMap).length > 0) {
+  if (state.isFriendMode) {
     showScreen("quiz");
-  } else {
-    showScreen("intro");
+    return;
   }
+  // 号主模式：不能进入测试，回到首页并提示
+  if (!state.currentUser) {
+    showAuthModal();
+    return;
+  }
+  showScreen("intro");
+  showToast("号主无法为自己测试，请邀请好友来测测你");
 }
 
-function onNavProfile() {
+async function onNavProfile() {
+  // 好友模式下不允许访问 profile
+  if (state.isFriendMode) {
+    showToast("好友模式无法查看此页面");
+    return;
+  }
+  if (!state.currentUser) {
+    showAuthModal();
+    return;
+  }
   showScreen("profile");
 }
 
@@ -251,6 +557,10 @@ function goNext() {
 
 function renderQuestion() {
   const question = state.questions[state.currentIndex];
+  if (!question) {
+    console.error("[renderQuestion] 题目未加载或索引越界", state.currentIndex, state.questions.length);
+    return;
+  }
   ui.progressCurrent.textContent = String(state.currentIndex + 1);
   ui.questionTitle.textContent = `第 ${question.id} 题 · ${question.title}`;
   ui.questionPrompt.textContent = question.prompt;
@@ -335,14 +645,38 @@ function selectOption(question, option) {
   }, AUTO_ADVANCE_DELAY);
 }
 
-function openProfile() {
+async function openProfile() {
+  // 如果是好友模式，不允许查看 profile
+  if (state.isFriendMode) return;
+
   const hasHistory = state.attemptHistory.length > 0;
   const currentAnswered = Object.keys(state.answerMap).length;
   const total = state.questions.length || 1;
 
-  if (!hasHistory && currentAnswered === 0) {
+  // ===== 从服务端拉取聚合数据 =====
+  let serverScores = null;
+  let serverCollectedCards = [];
+  let friendCount = 0;
+
+  if (state.currentUser) {
+    const profileData = await fetchProfileData(state.currentUser.userId);
+    if (profileData) {
+      state.friendProfileData = profileData;
+      friendCount = profileData.friendCount || 0;
+      serverScores = profileData.avgScores;
+      serverCollectedCards = profileData.collectedCards || [];
+      if (ui.friendCountHint) {
+        ui.friendCountHint.textContent = `已有 ${friendCount} 位好友作答`;
+      }
+    }
+  }
+
+  // 有服务端数据时优先使用
+  const useServerData = serverScores && friendCount > 0;
+
+  if (!useServerData && !hasHistory && currentAnswered === 0) {
     ui.profileLabel.textContent = "尚未开始";
-    ui.profileDescription.textContent = "你还没有回答任何问题，开始答题以生成画像。";
+    ui.profileDescription.textContent = "邀请好友作答后，这里会显示聚合画像。你也可以自己答题来测试。";
     ui.profileComment.textContent = "";
     ui.profileScoreList.innerHTML = "";
     if (ui.profileRadar) {
@@ -360,7 +694,10 @@ function openProfile() {
   let scores;
   let sourceHint = "";
 
-  if (hasHistory) {
+  if (useServerData) {
+    scores = serverScores;
+    sourceHint = `基于 ${friendCount} 位好友的答题聚合`;
+  } else if (hasHistory) {
     scores = computeAverageScores();
     sourceHint = `基于 ${state.attemptHistory.length} 次答题的平均值`;
   } else {
@@ -377,7 +714,9 @@ function openProfile() {
   ui.profileDescription.textContent = outcome.description;
 
   if (ui.profileProgressHint) {
-    if (hasHistory) {
+    if (useServerData && friendCount > 0) {
+      ui.profileProgressHint.textContent = sourceHint;
+    } else if (hasHistory) {
       ui.profileProgressHint.textContent = sourceHint;
     } else {
       const remaining = total - currentAnswered;
@@ -392,8 +731,12 @@ function openProfile() {
   renderScoreListTo(scores, ui.profileScoreList);
   renderRadarChartTo(scores, ui.profileRadar);
 
-  // Rebuild collected cards from historical attempts (multi-run collection)
-  rebuildCollectedFromHistory();
+  // Rebuild collected cards: 服务端数据优先
+  if (useServerData && serverCollectedCards.length > 0) {
+    state.collectedCards = new Set(serverCollectedCards);
+  } else {
+    rebuildCollectedFromHistory();
+  }
 
   // Initialize the draw-cards area for the profile page
   initDrawCardsSection();
@@ -537,6 +880,25 @@ function showResult() {
   ui.resultLabel.textContent = outcome.label;
   ui.resultDescription.textContent = outcome.description;
   ui.resultComment.textContent = comment.text;
+
+  // ===== 好友模式：提交到服务端并显示成功提示 =====
+  if (state.isFriendMode) {
+    // 隐藏号主的结果详情，显示提交成功
+    ui.ownerResultContent?.classList.add("is-hidden");
+    ui.friendSubmitSuccess?.classList.remove("is-hidden");
+    hideFriendBanner();
+    // 提交数据到服务端
+    submitToOwner(
+      JSON.parse(JSON.stringify(state.answerMap)),
+      { ...state.scores }
+    );
+    showScreen("result");
+    return;
+  }
+
+  // 号主模式：正常展示结果
+  ui.ownerResultContent?.classList.remove("is-hidden");
+  ui.friendSubmitSuccess?.classList.add("is-hidden");
   showScreen("result");
   renderScoreList(state.scores);
   renderRadarChart(state.scores);

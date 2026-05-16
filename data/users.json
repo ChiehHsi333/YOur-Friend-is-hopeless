@@ -1,0 +1,753 @@
+{
+  "users": {
+    "6ede219ae57f": {
+      "nickname": "test",
+      "createdAt": 1778919503656,
+      "friendResponses": []
+    },
+    "f9db07ab828c": {
+      "nickname": "MKH",
+      "createdAt": 1778919522159,
+      "friendResponses": [
+        {
+          "friendId": "de7a7cb1bdda",
+          "timestamp": 1778919558866,
+          "answerMap": {
+            "1": {
+              "optionId": "A",
+              "weights": {
+                "lan": 1,
+                "zic": 2,
+                "hua": 0,
+                "xia": 0,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "2": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 3,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "3": {
+              "optionId": "C",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "4": {
+              "optionId": "B",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "5": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 0,
+                "hua": 0,
+                "xia": 3,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "6": {
+              "optionId": "A",
+              "weights": {
+                "lan": 0,
+                "zic": 0,
+                "hua": 0,
+                "xia": 2,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "7": {
+              "optionId": "C",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 1,
+                "xia": 0,
+                "bia": 1,
+                "dun": 0
+              }
+            },
+            "8": {
+              "optionId": "D",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 2
+              }
+            },
+            "9": {
+              "optionId": "B",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "10": {
+              "optionId": "A",
+              "weights": {
+                "lan": 0,
+                "zic": 2,
+                "hua": 0,
+                "xia": 0,
+                "bia": 1,
+                "dun": 0
+              }
+            },
+            "11": {
+              "optionId": "C",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "12": {
+              "optionId": "B",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 2
+              }
+            },
+            "13": {
+              "optionId": "A",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "14": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 0,
+                "hua": 2,
+                "xia": 1,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "15": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 0,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            }
+          },
+          "scores": {
+            "lan": 15,
+            "zic": 12,
+            "hua": 8,
+            "xia": 12,
+            "bia": 8,
+            "dun": 4
+          }
+        }
+      ]
+    },
+    "595ca727d75d": {
+      "nickname": "ownerTest",
+      "createdAt": 1778919820117,
+      "friendResponses": []
+    },
+    "5aaba9f172ca": {
+      "nickname": "MKH",
+      "createdAt": 1778920934247,
+      "friendResponses": [
+        {
+          "friendId": "f2d9c8f11047",
+          "timestamp": 1778921240360,
+          "answerMap": {
+            "1": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 2,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 2
+              }
+            },
+            "2": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 3,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "3": {
+              "optionId": "C",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "4": {
+              "optionId": "B",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "5": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 0,
+                "hua": 0,
+                "xia": 3,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "6": {
+              "optionId": "B",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "7": {
+              "optionId": "A",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 0,
+                "xia": 0,
+                "bia": 2,
+                "dun": 1
+              }
+            },
+            "8": {
+              "optionId": "D",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 2
+              }
+            },
+            "9": {
+              "optionId": "B",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "10": {
+              "optionId": "D",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 1
+              }
+            },
+            "11": {
+              "optionId": "B",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 0,
+                "xia": 3,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "12": {
+              "optionId": "A",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 1
+              }
+            },
+            "13": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 2
+              }
+            },
+            "14": {
+              "optionId": "B",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "15": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 0,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            }
+          },
+          "scores": {
+            "lan": 15,
+            "zic": 11,
+            "hua": 10,
+            "xia": 8,
+            "bia": 6,
+            "dun": 9
+          }
+        },
+        {
+          "friendId": "bb932bdadb0f",
+          "timestamp": 1778921365011,
+          "answerMap": {
+            "1": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 2,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 2
+              }
+            },
+            "2": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 3,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "3": {
+              "optionId": "C",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "4": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 2,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 1
+              }
+            },
+            "5": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 0,
+                "hua": 1,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "6": {
+              "optionId": "B",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "7": {
+              "optionId": "C",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 1,
+                "xia": 0,
+                "bia": 1,
+                "dun": 0
+              }
+            },
+            "8": {
+              "optionId": "C",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 2,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "9": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 2,
+                "hua": 1,
+                "xia": 0,
+                "bia": 1,
+                "dun": 0
+              }
+            },
+            "10": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 2,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 1
+              }
+            },
+            "11": {
+              "optionId": "C",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "12": {
+              "optionId": "C",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 3,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "13": {
+              "optionId": "B",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 1,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "14": {
+              "optionId": "C",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "15": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 2,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            }
+          },
+          "scores": {
+            "lan": 10,
+            "zic": 17,
+            "hua": 14,
+            "xia": 9,
+            "bia": 4,
+            "dun": 4
+          }
+        }
+      ]
+    },
+    "c0fe64a175c7": {
+      "nickname": "KinJohn",
+      "createdAt": 1778921442990,
+      "friendResponses": [
+        {
+          "friendId": "3d26e90f9b42",
+          "timestamp": 1778921675615,
+          "answerMap": {
+            "1": {
+              "optionId": "A",
+              "weights": {
+                "lan": 1,
+                "zic": 2,
+                "hua": 0,
+                "xia": 0,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "2": {
+              "optionId": "C",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 3,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "3": {
+              "optionId": "C",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "4": {
+              "optionId": "B",
+              "weights": {
+                "lan": 2,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "5": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 0,
+                "hua": 0,
+                "xia": 3,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "6": {
+              "optionId": "A",
+              "weights": {
+                "lan": 0,
+                "zic": 0,
+                "hua": 0,
+                "xia": 2,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "7": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 0,
+                "dun": 2
+              }
+            },
+            "8": {
+              "optionId": "C",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 2,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "9": {
+              "optionId": "B",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 2,
+                "dun": 0
+              }
+            },
+            "10": {
+              "optionId": "D",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 1
+              }
+            },
+            "11": {
+              "optionId": "C",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 0,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "12": {
+              "optionId": "D",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 0,
+                "xia": 0,
+                "bia": 2,
+                "dun": 1
+              }
+            },
+            "13": {
+              "optionId": "B",
+              "weights": {
+                "lan": 0,
+                "zic": 1,
+                "hua": 1,
+                "xia": 2,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "14": {
+              "optionId": "B",
+              "weights": {
+                "lan": 2,
+                "zic": 0,
+                "hua": 1,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            },
+            "15": {
+              "optionId": "D",
+              "weights": {
+                "lan": 1,
+                "zic": 1,
+                "hua": 2,
+                "xia": 0,
+                "bia": 0,
+                "dun": 0
+              }
+            }
+          },
+          "scores": {
+            "lan": 13,
+            "zic": 13,
+            "hua": 12,
+            "xia": 9,
+            "bia": 8,
+            "dun": 4
+          }
+        }
+      ]
+    },
+    "f94693319260": {
+      "nickname": "MKH",
+      "createdAt": 1778921813616,
+      "friendResponses": []
+    }
+  }
+}
