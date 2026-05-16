@@ -182,7 +182,12 @@ function handleStart() {
 }
 
 function onNavQuiz() {
-  showScreen("intro");
+  // 已进入过测试 → 跳到答题页；否则回首页
+  if (state.result || Object.keys(state.answerMap).length > 0) {
+    showScreen("quiz");
+  } else {
+    showScreen("intro");
+  }
 }
 
 function onNavProfile() {
