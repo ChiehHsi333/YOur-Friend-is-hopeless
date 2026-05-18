@@ -1,4 +1,15 @@
 {
+  "name": "failure-quiz-game",
+  "version": "1.0.0",
+  "description": "你这朋友算是废了 - 互动测试游戏",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "express": "^5.2.1",
     "pdfjs-dist": "^4.8.69",

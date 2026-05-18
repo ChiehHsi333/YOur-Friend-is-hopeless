@@ -2,15 +2,29 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'users.json');
 
-app.use(express.json());
+// 信任代理（适用于阿里云/Nginx等反向代理环境）
+app.enable('trust proxy');
+
+app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname)));
 
 // ===== 工具函数 =====
+function ensureDataDir() {
+  const dir = path.dirname(DATA_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ users: {} }, null, 2), 'utf-8');
+  }
+}
+
 function loadDB() {
   try {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
@@ -23,6 +37,9 @@ function loadDB() {
 function saveDB(db) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2), 'utf-8');
 }
+
+// 启动时确保数据文件存在
+ensureDataDir();
 
 function generateId() {
   return crypto.randomBytes(6).toString('hex');
@@ -164,9 +181,9 @@ app.get('/api/user/:id/share', (req, res) => {
     return res.status(404).json({ error: '用户不存在' });
   }
 
-  // 从请求头或查询参数获取主机地址
-  const protocol = req.protocol;
-  const host = req.get('host');
+  // 兼容反向代理（Nginx/阿里云SLB），优先使用 x-forwarded-proto
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
   const inviteUrl = `${protocol}://${host}/?invite=${id}`;
 
   res.json({
@@ -187,14 +204,18 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
+  const isProd = process.env.NODE_ENV === 'production';
   console.log(`====================================`);
   console.log(`  服务器已启动: http://localhost:${PORT}`);
-  console.log(`  局域网访问: http://${getLocalIP()}:${PORT}`);
+  if (!isProd) {
+    console.log(`  局域网访问: http://${getLocalIP()}:${PORT}`);
+  }
+  console.log(`  环境: ${isProd ? 'production' : 'development'}`);
   console.log(`====================================`);
 });
 
 function getLocalIP() {
-  const interfaces = require('os').networkInterfaces();
+  const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
       if (iface.family === 'IPv4' && !iface.internal) {
